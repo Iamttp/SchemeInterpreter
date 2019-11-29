@@ -1,0 +1,1 @@
+(begin (def a 3) (* a a))
