@@ -120,8 +120,7 @@ struct SScope {
 };
 
 // ------------------------------------------- 类型实现
-// TODO 没有释放内存，没有对很多错误进行检查
-// TODO 现在的处理是bool、int统统为int. 没有浮点数
+// TODO 没有释放内存，没有对很多错误进行检查。现在的处理是bool、int统统为int. 没有浮点数
 struct SList {
     std::vector<void *> vec;
 };
@@ -139,6 +138,7 @@ bool try_parse(std::string &val, int *num) {
     return is_digits(val, num);
 }
 
+// TODO 可以考虑添加append 和高阶函数
 void *evaluate(SScope *scope, SExpression *program) {
     SExpression *current = program;
     while (true) {
@@ -151,7 +151,6 @@ void *evaluate(SScope *scope, SExpression *program) {
                 return scope->find(current->val);
         }
 
-        // TODO 可以考虑添加append 和高阶函数
         auto str = program->child[0]->val;
         if (str == "def")
             return scope->define(program->child[1]->val,
@@ -267,9 +266,7 @@ void *evaluate(SScope *scope, SExpression *program) {
         } else if (str == "not") {
             int *res = new int(!*((int *) evaluate(scope, program->child[1])));
             return (void *) res;
-        }
-            // TODO 貌似是因为递归调用时，scope没有正确的保存参数。
-        else {
+        } else {
             // 可能为自定义函数
             // 非具名函数调用：((func (x) (* x x)) 3)
             // 具名函数调用：(square 3)
@@ -282,7 +279,6 @@ void *evaluate(SScope *scope, SExpression *program) {
                 newScope->variableTable[function->parameters[i]] = arguments[i];
             return evaluate(newScope, function->body);
         }
-
     }
 }
 
@@ -300,6 +296,7 @@ void func(std::string text, SScope *scope) {
     }
 }
 
+// TODO 注意修改你的文件，文件格式为每次读取一行，一个文件的代码共享一个作用域，默认进入交互模式，输入n进入读取文件模式。 交互模式下，共用一个作用域，每次读入输入的一行。
 int main() {
     std::cout << "是否打开终端交互模式：([y]/n)\n";
     char a;
@@ -352,5 +349,5 @@ int main() {
         }
 
     }
-    return 0;
 }
+

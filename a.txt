@@ -5,4 +5,4 @@
 (def y (add (mul 10 14 ) 5))
 (def z (gcd 70 28 ) )
 (def fib (func (n) (if (or (= n 0) (= n 1)) 1 (+ (fib (- n 1)) (fib (- n 2))))))
-(def q (fib 8 ) )
+(def q (fib 20 ) )
