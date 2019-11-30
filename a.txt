@@ -1,1 +1,4 @@
-( def x (+ (if (>= 4 1) 8 1) 22) )
+(def c (begin
+    (def a 3)
+    (def b 5)
+    (/ (+ a b) 2)))

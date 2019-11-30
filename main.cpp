@@ -1,5 +1,5 @@
 /*
- * å‚è€ƒæ–‡ç« ï¼š http://zh.lucida.me/blog/how-to-implement-an-interpreter-in-csharp/
+ * ²Î¿¼ÎÄÕÂ£º http://zh.lucida.me/blog/how-to-implement-an-interpreter-in-csharp/
  */
 
 #include <iostream>
@@ -12,9 +12,9 @@
 #include <map>
 #include "tool.h"
 
-// ------------------------------------------- è¯æ³•åˆ†æ
+// ------------------------------------------- ´Ê·¨·ÖÎö
 
-// ç»™(,)æ·»åŠ ç©ºæ ¼
+// ¸ø(,)Ìí¼Ó¿Õ¸ñ
 std::string replaceAddWhite(std::string text) {
     std::string resText;
     int len = text.size();
@@ -29,7 +29,7 @@ std::string replaceAddWhite(std::string text) {
     return resText;
 }
 
-// è·å–tokens,ç›´æ¥ç”¨åˆ†éš”ç¬¦åˆ†å‰²
+// »ñÈ¡tokens,Ö±½ÓÓÃ·Ö¸ô·û·Ö¸î
 std::vector<std::string> getTokens(std::string text) {
     std::vector<std::string> tokens;
     int len = text.size();
@@ -49,7 +49,7 @@ std::vector<std::string> getTokens(std::string text) {
 
 // ------------------------------------------- Parser
 
-// Abstract Syntax Treeçš„æ¯ä¸ªç»“ç‚¹
+// Abstract Syntax TreeµÄÃ¿¸ö½áµã
 struct SExpression {
     std::string val;
     std::vector<SExpression *> child;
@@ -70,9 +70,9 @@ struct SExpression {
 };
 
 /*
- * ç¢°åˆ°å·¦æ‹¬å·ï¼Œåˆ›å»ºä¸€ä¸ªæ–°çš„èŠ‚ç‚¹åˆ°å½“å‰èŠ‚ç‚¹ï¼ˆ current ï¼‰ï¼Œç„¶åé‡è®¾å½“å‰èŠ‚ç‚¹ã€‚
- * ç¢°åˆ°å³æ‹¬å·ï¼Œå›é€€åˆ°å½“å‰èŠ‚ç‚¹çš„çˆ¶èŠ‚ç‚¹ã€‚
- * å¦åˆ™æŠŠä¸ºå½“å‰è¯ç´ åˆ›å»ºèŠ‚ç‚¹ï¼Œæ·»åŠ åˆ°å½“å‰èŠ‚ç‚¹ä¸­ã€‚
+ * Åöµ½×óÀ¨ºÅ£¬´´½¨Ò»¸öĞÂµÄ½Úµãµ½µ±Ç°½Úµã£¨ current £©£¬È»ºóÖØÉèµ±Ç°½Úµã¡£
+ * Åöµ½ÓÒÀ¨ºÅ£¬»ØÍËµ½µ±Ç°½ÚµãµÄ¸¸½Úµã¡£
+ * ·ñÔò°ÑÎªµ±Ç°´ÊËØ´´½¨½Úµã£¬Ìí¼Óµ½µ±Ç°½ÚµãÖĞ¡£
  */
 SExpression *parseAsIScheme(const std::vector<std::string> &token) {
     auto *program = new SExpression("", nullptr);
@@ -91,14 +91,14 @@ SExpression *parseAsIScheme(const std::vector<std::string> &token) {
     return *program->child.begin();
 }
 
-// ------------------------------------------- ä½œç”¨åŸŸ
+// ------------------------------------------- ×÷ÓÃÓò
 
 /*
- * ç”¨äºä¿å­˜å®šä¹‰çš„å˜é‡ï¼Œé€šè¿‡parentï¼Œå‘å‰æŸ¥æ‰¾ã€‚TODO parent è²Œä¼¼æ²¡æœ‰å®Œå–„
+ * ÓÃÓÚ±£´æ¶¨ÒåµÄ±äÁ¿£¬Í¨¹ıparent£¬ÏòÇ°²éÕÒ¡£
  */
 class SScope {
 public:
-    // åŒ…å«å†…ç½®æ“ä½œ
+    // °üº¬ÄÚÖÃ²Ù×÷
     std::map<std::string, void *> variableTable;
     SScope *parent;
 
@@ -121,8 +121,8 @@ public:
 };
 
 
-// ------------------------------------------- ç±»å‹å®ç°
-// TODO æ·»åŠ å…¶ä»–ç±»å‹ æ•°å€¼ï¼ŒBoolï¼Œåˆ—è¡¨å’Œå‡½æ•° ï¼Œç°åœ¨çš„å¤„ç†æ˜¯boolã€intç»Ÿç»Ÿä¸ºint.
+// ------------------------------------------- ÀàĞÍÊµÏÖ
+// TODO Ìí¼ÓÆäËûÀàĞÍ ÊıÖµ£¬Bool£¬ÁĞ±íºÍº¯Êı £¬ÏÖÔÚµÄ´¦ÀíÊÇbool¡¢intÍ³Í³Îªint.
 bool try_parse(std::string val, int *num) {
     return is_digits(val, num);
 }
@@ -130,47 +130,108 @@ bool try_parse(std::string val, int *num) {
 void *evaluate(SScope *scope, SExpression *program) {
     SExpression *current = program;
     while (true) {
-        // å¤„ç†å­—é¢é‡ï¼ˆLiteralsï¼‰ï¼š 3 ï¼›å’Œå…·åé‡ï¼ˆNamed Valuesï¼‰ï¼š x
+        // ´¦Àí×ÖÃæÁ¿£¨Literals£©£º 3 £»ºÍ¾ßÃûÁ¿£¨Named Values£©£º x
         if (current->child.empty()) {
             int *num = new int(0);
             if (try_parse(current->val, num))
                 return num;
             else
                 return scope->find(current->val);
-        } else {
-            // TODO å¤„ç† def if begin func ...
-            auto str = program->child[0]->val;
-            if (str == "def")
-                return scope->define(program->child[1]->val,
-                                     evaluate(new SScope(scope), program->child[2]));
-            else if (str == "if") {
-                bool *condition = static_cast<bool *>(evaluate(new SScope(scope), program->child[1]));
-                return (*condition) ? evaluate(new SScope(scope), program->child[2])
-                                    : evaluate(new SScope(scope), program->child[3]);
-            } else if (str == ">=") {
-                int *a1 = (int *) evaluate(new SScope(scope), program->child[1]);
-                int *a2 = (int *) evaluate(new SScope(scope), program->child[2]);
-                int *res = new int(*a1 >= *a2);
-                return (void *) res;
-            } else if (str == "+") {
-                // TODO è¿ç»­åŠ 
-                int *a1 = (int *) evaluate(new SScope(scope), program->child[1]);
-                int *a2 = (int *) evaluate(new SScope(scope), program->child[2]);
-                int *res = new int(*a1 + *a2);
-                return (void *) res;
-            } else {
-                throw "Undefined name";
-            }
         }
+
+        // TODO ´¦Àí def if begin func ...
+        auto str = program->child[0]->val;
+        if (str == "def")
+            return scope->define(program->child[1]->val,
+                                 evaluate(new SScope(scope), program->child[2]));
+        else if (str == "if") {
+            bool *condition = static_cast<bool *>(evaluate(new SScope(scope), program->child[1]));
+            return (*condition) ? evaluate(new SScope(scope), program->child[2])
+                                : evaluate(new SScope(scope), program->child[3]);
+        } else if (str == "begin") {
+            void *res = nullptr;
+            for (auto i = program->child.begin() + 1; i != program->child.end(); ++i)
+                res = evaluate(scope, *i);
+            return res;
+        }
+
+            // ±È½Ï²Ù×÷ >= > <= < =
+        else if (str == ">=") {
+            int *res = new int(*((int *) evaluate(new SScope(scope), program->child[1]))
+                               >= *((int *) evaluate(new SScope(scope), program->child[2])));
+            return (void *) res;
+        } else if (str == ">") {
+            int *res = new int(*((int *) evaluate(new SScope(scope), program->child[1]))
+                               > *((int *) evaluate(new SScope(scope), program->child[2])));
+            return (void *) res;
+        } else if (str == "<=") {
+            int *res = new int(*((int *) evaluate(new SScope(scope), program->child[1]))
+                               <= *((int *) evaluate(new SScope(scope), program->child[2])));
+            return (void *) res;
+        } else if (str == "<") {
+            int *res = new int(*((int *) evaluate(new SScope(scope), program->child[1]))
+                               < *((int *) evaluate(new SScope(scope), program->child[2])));
+            return (void *) res;
+        } else if (str == "=") {
+            int *res = new int(*((int *) evaluate(new SScope(scope), program->child[1]))
+                               == *((int *) evaluate(new SScope(scope), program->child[2])));
+            return (void *) res;
+        }
+            // ËãÊõ²Ù×÷ + - * / %
+        else if (str == "+") {
+            int *res = new int(0);
+            for (auto i = program->child.begin() + 1; i != program->child.end(); ++i)
+                *res += *((int *) evaluate(new SScope(scope), *i));
+            return (void *) res;
+        } else if (str == "-") {
+            int *res = new int(0);
+            for (auto i = program->child.begin() + 2; i != program->child.end(); ++i)
+                *res -= *((int *) evaluate(new SScope(scope), *i));
+            *res += *((int *) evaluate(new SScope(scope), *(program->child.begin() + 1)));
+            return (void *) res;
+        } else if (str == "*") {
+            int *res = new int(1);
+            for (auto i = program->child.begin() + 1; i != program->child.end(); ++i)
+                *res *= *((int *) evaluate(new SScope(scope), *i));
+            return (void *) res;
+        } else if (str == "/") {
+            int *res = new int(1);
+            for (auto i = program->child.begin() + 2; i != program->child.end(); ++i)
+                *res *= *((int *) evaluate(new SScope(scope), *i));
+            *res = *((int *) evaluate(new SScope(scope), *(program->child.begin() + 1))) / *res;
+            return (void *) res;
+        } else if (str == "%") {
+            int *res = new int(*((int *) evaluate(new SScope(scope), program->child[1]))
+                               % *((int *) evaluate(new SScope(scope), program->child[2])));
+            return (void *) res;
+        }
+            // Âß¼­²Ù×÷ and £¬ or ºÍ not
+        else if (str == "and") {
+            int *res = new int(0);
+            for (auto i = program->child.begin() + 1; i != program->child.end(); ++i)
+                if (!*((int *) evaluate(new SScope(scope), *i)))
+                    return (void *) res;
+            *res = 1;
+            return (void *) res;
+        } else if (str == "or") {
+            int *res = new int(1);
+            for (auto i = program->child.begin() + 1; i != program->child.end(); ++i)
+                if (*((int *) evaluate(new SScope(scope), *i)))
+                    return (void *) res;
+            *res = 0;
+            return (void *) res;
+        } else if (str == "not") {
+            int *res = new int(!*((int *) evaluate(new SScope(scope), program->child[1])));
+            return (void *) res;
+        } else {
+            throw "Undefined name:" + str;
+        }
+
     }
 }
 
 
-int main() {
-    char *fn = "C:\\Users\\ttp\\CLionProjects\\ny_pl0\\a.txt";
-    std::string text;
-    text = readFileIntoString(fn);
-
+void func(std::string text) {
     std::string text1 = replaceAddWhite(text);
     auto tokens = getTokens(text1);
     auto program = parseAsIScheme(tokens);
@@ -180,6 +241,36 @@ int main() {
 
     for (auto item:scope->variableTable) {
         std::cout << item.first << "\t" << *((int *) item.second) << std::endl;
+    }
+}
+
+int main() {
+    std::cout << "ÊÇ·ñ´ò¿ªÖÕ¶Ë½»»¥Ä£Ê½£º([y]/n)\n";
+    char a;
+    std::cin >> a;
+    getchar();
+
+    std::string text;
+    if (a == 'n') {
+        char *fn = "C:\\Users\\ttp\\CLionProjects\\ny_pl0\\a.txt";
+        text = readFileIntoString(fn);
+        func(text);
+    } else {
+        while (true) {
+            printf(">>>");
+            char str[1000];
+            std::cin.getline(str, 1000);
+            text = str;
+
+            bool flag = false;
+            for (auto item:str)
+                if (!is_whiteBlock(item))
+                    flag = true;
+            if (!flag) continue;
+
+            printf(">>>");
+            func(text);
+        }
     }
     return 0;
 }
