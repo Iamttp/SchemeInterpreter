@@ -3,4 +3,4 @@ project(ny_pl0)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(ny_pl0 main.cpp)
+add_executable(ny_pl0 main.cpp tool.h)

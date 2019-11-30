@@ -9,6 +9,8 @@
 #include <fstream>
 #include <sstream>
 #include <list>
+#include <map>
+#include "tool.h"
 
 // ------------------------------------------- 词法分析
 
@@ -25,11 +27,6 @@ std::string replaceAddWhite(std::string text) {
             resText += text[i];
     }
     return resText;
-}
-
-// 判断是否为分隔符
-inline bool is_whiteBlock(char c) {
-    return c == ' ' || c == '\t' || c == '\r' || c == '\n';
 }
 
 // 获取tokens,直接用分隔符分割
@@ -55,10 +52,21 @@ std::vector<std::string> getTokens(std::string text) {
 // Abstract Syntax Tree的每个结点
 struct SExpression {
     std::string val;
-    std::list<SExpression *> child;
+    std::vector<SExpression *> child;
     SExpression *parent;
 
     SExpression(std::string val, SExpression *parent) : val(std::move(val)), parent(parent) {}
+
+    std::string toString() {
+        if (val == "(") {
+            std::string res = "(";
+            for (auto item:child)
+                res += item->toString();
+            return res + ")";
+        } else {
+            return val;
+        }
+    }
 };
 
 /*
@@ -80,8 +88,73 @@ SExpression *parseAsIScheme(const std::vector<std::string> &token) {
             current->child.push_back(new SExpression(lex, current));
         }
     }
-    return program;
+    return *program->child.begin();
 }
+
+// ------------------------------------------- 作用域
+class SScope {
+public:
+    // 包含内置操作
+    std::map<std::string, void *> variableTable;
+    SScope *parent;
+
+    SScope(SScope *parent) : parent(parent) {}
+
+    void *find(std::string name) {
+        SScope *current = this;
+        while (current != nullptr) {
+            if (current->variableTable.find(name) != current->variableTable.end())
+                return current->variableTable[name];
+            current = current->parent;
+        }
+        throw name + " is not defined.";
+    }
+
+    void *define(std::string name, void *value) {
+        variableTable[name] = value;
+        return value;
+    }
+};
+
+
+// ------------------------------------------- 类型实现 数值，Bool，列表和函数
+// TODO 添加其他类型
+bool try_parse(std::string val, int *num) {
+    return is_digits(val, num);
+}
+
+void *evaluate(SScope *scope, SExpression *program) {
+    SExpression *current = program;
+    while (true) {
+        // 处理字面量（Literals）： 3 ；和具名量（Named Values）： x
+        if (current->child.empty()) {
+            int *num = new int(0);
+            if (try_parse(current->val, num))
+                return num;
+            else
+                return scope->find(current->val);
+        } else {
+            // 处理 def if begin func ...
+            auto str = program->child[0]->val;
+            if (str == "def")
+                return scope->define(program->child[1]->val,
+                                     evaluate(new SScope(scope), program->child[2]));
+            else if (str == "if") {
+                bool *condition = static_cast<bool *>(evaluate(new SScope(scope), program->child[1]));
+                return (*condition) ? evaluate(new SScope(scope), program->child[2])
+                                    : evaluate(new SScope(scope), program->child[3]);
+            } else if (str == ">=") {
+                int *a1 = (int *) evaluate(new SScope(scope), program->child[1]);
+                int *a2 = (int *) evaluate(new SScope(scope), program->child[2]);
+                int *res = new int(*a1 >= *a2);
+                return (void *) res;
+            } else {
+                throw "Undefined name";
+            }
+        }
+    }
+}
+
 
 //从文件读入到string里
 std::string readFileIntoString(char *filename) {
@@ -100,12 +173,15 @@ int main() {
 
     std::string text1 = replaceAddWhite(text);
     auto tokens = getTokens(text1);
+    auto program = parseAsIScheme(tokens);
 
-    std::cout << tokens.size() << std::endl;
-    for (const auto &item:tokens)
-        std::cout << item << std::endl;
+//    std::cout << program->toString();
 
-    parseAsIScheme(tokens);
+    SScope *scope = new SScope(nullptr);
+    evaluate(scope, program);
 
+    for (auto item:scope->variableTable) {
+        std::cout << item.first << "\t" << *((int *)item.second) << std::endl;
+    }
     return 0;
 }
