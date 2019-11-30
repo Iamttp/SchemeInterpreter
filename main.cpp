@@ -120,9 +120,13 @@ public:
     }
 };
 
-
 // ------------------------------------------- 类型实现
+// TODO 没有释放内存，没有对很多错误进行检查
 // TODO 添加其他类型 数值，Bool，列表和函数 ，现在的处理是bool、int统统为int.
+struct SList {
+    std::vector<void *> vec;
+};
+
 bool try_parse(std::string &val, int *num) {
     return is_digits(val, num);
 }
@@ -145,9 +149,9 @@ void *evaluate(SScope *scope, SExpression *program) {
             return scope->define(program->child[1]->val,
                                  evaluate(new SScope(scope), program->child[2]));
         else if (str == "if") {
-            bool *condition = static_cast<bool *>(evaluate(new SScope(scope), program->child[1]));
-            return (*condition) ? evaluate(new SScope(scope), program->child[2])
-                                : evaluate(new SScope(scope), program->child[3]);
+            bool *condition = static_cast<bool *>(evaluate(scope, program->child[1]));
+            return (*condition) ? evaluate(scope, program->child[2])
+                                : evaluate(scope, program->child[3]);
         } else if (str == "begin") {
             void *res = nullptr;
             for (auto i = program->child.begin() + 1; i != program->child.end(); ++i)
@@ -155,73 +159,98 @@ void *evaluate(SScope *scope, SExpression *program) {
             return res;
         }
 
+            // Scheme 的列表操作包括 first ， rest ， empty? 和 append
+        else if (str == "list") {
+            auto *sList = new SList;
+            for (auto i = program->child.begin() + 1; i != program->child.end(); ++i) {
+                void *res = evaluate(scope, *i);
+                sList->vec.push_back(res);
+            }
+            return sList;
+        } else if (str == "first") {
+            int *res = new int;
+            SList *sList = (SList *) evaluate(scope, *(++program->child.begin()));
+            *res = *((int *) sList->vec[0]);
+            return res;
+        } else if (str == "rest") {
+            auto *resSList = new SList();
+            SList *sList = (SList *) evaluate(scope, *(++program->child.begin()));
+            for (int i = 1; i < sList->vec.size(); i++)
+                resSList->vec.push_back(sList->vec[i]);
+            return resSList;
+        } else if (str == "empty?") {
+            int *res = new int;
+            SList *sList = (SList *) evaluate(scope, *(++program->child.begin()));
+            *res = (int) sList->vec.empty();
+            return res;
+        }
             // 比较操作 >= > <= < =
         else if (str == ">=") {
-            int *res = new int(*((int *) evaluate(new SScope(scope), program->child[1]))
-                               >= *((int *) evaluate(new SScope(scope), program->child[2])));
+            int *res = new int(*((int *) evaluate(scope, program->child[1]))
+                               >= *((int *) evaluate(scope, program->child[2])));
             return (void *) res;
         } else if (str == ">") {
-            int *res = new int(*((int *) evaluate(new SScope(scope), program->child[1]))
-                               > *((int *) evaluate(new SScope(scope), program->child[2])));
+            int *res = new int(*((int *) evaluate(scope, program->child[1]))
+                               > *((int *) evaluate(scope, program->child[2])));
             return (void *) res;
         } else if (str == "<=") {
-            int *res = new int(*((int *) evaluate(new SScope(scope), program->child[1]))
-                               <= *((int *) evaluate(new SScope(scope), program->child[2])));
+            int *res = new int(*((int *) evaluate(scope, program->child[1]))
+                               <= *((int *) evaluate(scope, program->child[2])));
             return (void *) res;
         } else if (str == "<") {
-            int *res = new int(*((int *) evaluate(new SScope(scope), program->child[1]))
-                               < *((int *) evaluate(new SScope(scope), program->child[2])));
+            int *res = new int(*((int *) evaluate(scope, program->child[1]))
+                               < *((int *) evaluate(scope, program->child[2])));
             return (void *) res;
         } else if (str == "=") {
-            int *res = new int(*((int *) evaluate(new SScope(scope), program->child[1]))
-                               == *((int *) evaluate(new SScope(scope), program->child[2])));
+            int *res = new int(*((int *) evaluate(scope, program->child[1]))
+                               == *((int *) evaluate(scope, program->child[2])));
             return (void *) res;
         }
             // 算术操作 + - * / %
         else if (str == "+") {
             int *res = new int(0);
             for (auto i = program->child.begin() + 1; i != program->child.end(); ++i)
-                *res += *((int *) evaluate(new SScope(scope), *i));
+                *res += *((int *) evaluate(scope, *i));
             return (void *) res;
         } else if (str == "-") {
             int *res = new int(0);
             for (auto i = program->child.begin() + 2; i != program->child.end(); ++i)
-                *res -= *((int *) evaluate(new SScope(scope), *i));
-            *res += *((int *) evaluate(new SScope(scope), *(program->child.begin() + 1)));
+                *res -= *((int *) evaluate(scope, *i));
+            *res += *((int *) evaluate(scope, *(program->child.begin() + 1)));
             return (void *) res;
         } else if (str == "*") {
             int *res = new int(1);
             for (auto i = program->child.begin() + 1; i != program->child.end(); ++i)
-                *res *= *((int *) evaluate(new SScope(scope), *i));
+                *res *= *((int *) evaluate(scope, *i));
             return (void *) res;
         } else if (str == "/") {
             int *res = new int(1);
             for (auto i = program->child.begin() + 2; i != program->child.end(); ++i)
-                *res *= *((int *) evaluate(new SScope(scope), *i));
-            *res = *((int *) evaluate(new SScope(scope), *(program->child.begin() + 1))) / *res;
+                *res *= *((int *) evaluate(scope, *i));
+            *res = *((int *) evaluate(scope, *(program->child.begin() + 1))) / *res;
             return (void *) res;
         } else if (str == "%") {
-            int *res = new int(*((int *) evaluate(new SScope(scope), program->child[1]))
-                               % *((int *) evaluate(new SScope(scope), program->child[2])));
+            int *res = new int(*((int *) evaluate(scope, program->child[1]))
+                               % *((int *) evaluate(scope, program->child[2])));
             return (void *) res;
         }
             // 逻辑操作 and ， or 和 not
         else if (str == "and") {
             int *res = new int(0);
             for (auto i = program->child.begin() + 1; i != program->child.end(); ++i)
-                if (!*((int *) evaluate(new SScope(scope), *i)))
+                if (!*((int *) evaluate(scope, *i)))
                     return (void *) res;
             *res = 1;
             return (void *) res;
         } else if (str == "or") {
             int *res = new int(1);
             for (auto i = program->child.begin() + 1; i != program->child.end(); ++i)
-                if (*((int *) evaluate(new SScope(scope), *i)))
+                if (*((int *) evaluate(scope, *i)))
                     return (void *) res;
             *res = 0;
             return (void *) res;
         } else if (str == "not") {
-            int *res = new int(!*((int *) evaluate(new SScope(scope), program->child[1])));
+            int *res = new int(!*((int *) evaluate(scope, program->child[1])));
             return (void *) res;
         } else {
             throw "Undefined name:" + str;
@@ -229,7 +258,6 @@ void *evaluate(SScope *scope, SExpression *program) {
 
     }
 }
-
 
 void func(std::string text, SScope *scope) {
     std::string text1 = replaceAddWhite(std::move(text));

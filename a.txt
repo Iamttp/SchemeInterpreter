@@ -1,4 +1,1 @@
-(def c (begin
-    (def a 3)
-    (def b 5)
-    (/ (+ a b) 2)))
+(def c (+ (first (list 10 12 1232)) 3))
