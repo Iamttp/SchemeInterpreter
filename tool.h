@@ -7,6 +7,16 @@
 
 #include <string>
 
+//从文件读入到string里
+std::string readFileIntoString(char *filename) {
+    std::ifstream ifile(filename);
+    std::ostringstream buf;
+    char ch;
+    while (buf && ifile.get(ch))
+        buf.put(ch);
+    return buf.str();
+}
+
 // 判断是否为分隔符
 inline bool is_whiteBlock(char c) {
     return c == ' ' || c == '\t' || c == '\r' || c == '\n';

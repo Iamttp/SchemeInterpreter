@@ -92,6 +92,10 @@ SExpression *parseAsIScheme(const std::vector<std::string> &token) {
 }
 
 // ------------------------------------------- 作用域
+
+/*
+ * 用于保存定义的变量，通过parent，向前查找。TODO parent 貌似没有完善
+ */
 class SScope {
 public:
     // 包含内置操作
@@ -117,8 +121,8 @@ public:
 };
 
 
-// ------------------------------------------- 类型实现 数值，Bool，列表和函数
-// TODO 添加其他类型
+// ------------------------------------------- 类型实现
+// TODO 添加其他类型 数值，Bool，列表和函数 ，现在的处理是bool、int统统为int.
 bool try_parse(std::string val, int *num) {
     return is_digits(val, num);
 }
@@ -134,7 +138,7 @@ void *evaluate(SScope *scope, SExpression *program) {
             else
                 return scope->find(current->val);
         } else {
-            // 处理 def if begin func ...
+            // TODO 处理 def if begin func ...
             auto str = program->child[0]->val;
             if (str == "def")
                 return scope->define(program->child[1]->val,
@@ -148,6 +152,12 @@ void *evaluate(SScope *scope, SExpression *program) {
                 int *a2 = (int *) evaluate(new SScope(scope), program->child[2]);
                 int *res = new int(*a1 >= *a2);
                 return (void *) res;
+            } else if (str == "+") {
+                // TODO 连续加
+                int *a1 = (int *) evaluate(new SScope(scope), program->child[1]);
+                int *a2 = (int *) evaluate(new SScope(scope), program->child[2]);
+                int *res = new int(*a1 + *a2);
+                return (void *) res;
             } else {
                 throw "Undefined name";
             }
@@ -155,16 +165,6 @@ void *evaluate(SScope *scope, SExpression *program) {
     }
 }
 
-
-//从文件读入到string里
-std::string readFileIntoString(char *filename) {
-    std::ifstream ifile(filename);
-    std::ostringstream buf;
-    char ch;
-    while (buf && ifile.get(ch))
-        buf.put(ch);
-    return buf.str();
-}
 
 int main() {
     char *fn = "C:\\Users\\ttp\\CLionProjects\\ny_pl0\\a.txt";
@@ -175,13 +175,11 @@ int main() {
     auto tokens = getTokens(text1);
     auto program = parseAsIScheme(tokens);
 
-//    std::cout << program->toString();
-
     SScope *scope = new SScope(nullptr);
     evaluate(scope, program);
 
     for (auto item:scope->variableTable) {
-        std::cout << item.first << "\t" << *((int *)item.second) << std::endl;
+        std::cout << item.first << "\t" << *((int *) item.second) << std::endl;
     }
     return 0;
 }
