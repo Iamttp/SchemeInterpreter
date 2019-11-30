@@ -1,5 +1,7 @@
 # 两天实现一门编程语言———简陋解释器教程
 
+![avictor](1.png)
+
 ## 关于：
 
 参考文章: `http://zh.lucida.me/blog/how-to-implement-an-interpreter-in-csharp/`
