@@ -96,8 +96,7 @@ SExpression *parseAsIScheme(const std::vector<std::string> &token) {
 /*
  * 用于保存定义的变量，通过parent，向前查找。
  */
-class SScope {
-public:
+struct SScope {
     // 包含内置操作
     std::map<std::string, void *> variableTable;
     SScope *parent;
@@ -125,6 +124,22 @@ public:
 // TODO 添加其他类型 数值，Bool，列表和函数 ，现在的处理是bool、int统统为int.
 struct SList {
     std::vector<void *> vec;
+};
+
+struct SFunction {
+    SExpression *body;
+    std::vector<std::string> parameters;
+    SScope *scope;
+
+    SFunction(SExpression *body, std::vector<std::string> parameters, SScope *scope)
+            : body(body), parameters(std::move(parameters)), scope(scope) {}
+
+    SFunction *update(std::vector<void *> arguments) {
+        auto *newScope = new SScope(scope);
+        for (int i = 0; i < arguments.size(); i++)
+            newScope->variableTable[parameters[i]] = arguments[i];
+        return new SFunction(body, parameters, newScope);;
+    }
 };
 
 bool try_parse(std::string &val, int *num) {
@@ -157,8 +172,15 @@ void *evaluate(SScope *scope, SExpression *program) {
             for (auto i = program->child.begin() + 1; i != program->child.end(); ++i)
                 res = evaluate(scope, *i);
             return res;
+        } else if (str == "func") {
+            SExpression *body = program->child[2];
+            auto *newScope = new SScope(scope);
+            SExpression *para = program->child[1];
+            std::vector<std::string> parameters;
+            for (auto item:para->child)
+                parameters.push_back(item->val);
+            return new SFunction(body, parameters, newScope);
         }
-
             // Scheme 的列表操作包括 first ， rest ， empty? 和 append
         else if (str == "list") {
             auto *sList = new SList;
@@ -253,7 +275,15 @@ void *evaluate(SScope *scope, SExpression *program) {
             int *res = new int(!*((int *) evaluate(scope, program->child[1])));
             return (void *) res;
         } else {
-            throw "Undefined name:" + str;
+            // 可能为自定义函数
+            // 非具名函数调用：((func (x) (* x x)) 3)
+            // 具名函数调用：(square 3)
+            auto *function = (SFunction *) ((str == "(") ? evaluate(scope, program) : scope->find(str));
+            std::vector<void *> arguments;
+            for (auto i = program->child.begin() + 1; i != program->child.end(); ++i)
+                arguments.push_back(evaluate(scope, *i));
+            function = function->update(arguments);
+            return evaluate(function->scope, function->body);
         }
 
     }
@@ -281,19 +311,26 @@ int main() {
 
     std::string text;
     auto *scope = new SScope(nullptr);
-
+    std::vector<std::string> strLin;
+    int index = 0;
     if (a == 'n') {
         char fn[] = R"(C:\Users\ttp\CLionProjects\ny_pl0\a.txt)";
         text = readFileIntoString(fn);
-        try {
-            func(text, scope);
-        } catch (std::exception &e) {
-            std::cout << e.what();
-        } catch (...) {
-            std::cout << "other error\n";
-        }
-    } else {
-        while (true) {
+        strLin = split(text, '\n');
+    }
+
+    while (true) {
+        if (a == 'n') {
+            try {
+                func(strLin[index++], scope);
+            } catch (std::exception &e) {
+                std::cout << e.what();
+            } catch (...) {
+                std::cout << "other error\n";
+            }
+            if (index == strLin.size())
+                return 0;
+        } else {
             printf(">>> ");
             char str[1000];
             std::cin.getline(str, 1000);
@@ -316,6 +353,8 @@ int main() {
                 std::cout << "other error\n";
             }
         }
+
     }
+
     return 0;
 }

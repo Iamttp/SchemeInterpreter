@@ -1,1 +1,4 @@
-(def c (+ (first (list 10 12 1232)) 3))
+(def mul (func (a b) (* a b)))
+(def add (func (a b) (+ a b)))
+(def x ( mul 70 14 ) )
+(def y ( add (mul 10 14 ) 5))
