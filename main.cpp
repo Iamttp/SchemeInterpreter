@@ -42,7 +42,7 @@ std::vector<std::string> getTokens(std::string text) {
         }
         std::string token = text.substr(i, j - i);
         tokens.push_back(token);
-        i = j++;
+        i = j;
     }
     return tokens;
 }
@@ -102,9 +102,9 @@ public:
     std::map<std::string, void *> variableTable;
     SScope *parent;
 
-    SScope(SScope *parent) : parent(parent) {}
+    explicit SScope(SScope *parent) : parent(parent) {}
 
-    void *find(std::string name) {
+    void *find(std::string &name) {
         SScope *current = this;
         while (current != nullptr) {
             if (current->variableTable.find(name) != current->variableTable.end())
@@ -114,7 +114,7 @@ public:
         throw name + " is not defined.";
     }
 
-    void *define(std::string name, void *value) {
+    void *define(std::string &name, void *value) {
         variableTable[name] = value;
         return value;
     }
@@ -123,7 +123,7 @@ public:
 
 // ------------------------------------------- 类型实现
 // TODO 添加其他类型 数值，Bool，列表和函数 ，现在的处理是bool、int统统为int.
-bool try_parse(std::string val, int *num) {
+bool try_parse(std::string &val, int *num) {
     return is_digits(val, num);
 }
 
@@ -231,15 +231,16 @@ void *evaluate(SScope *scope, SExpression *program) {
 }
 
 
-void func(std::string text) {
-    std::string text1 = replaceAddWhite(text);
+void func(std::string text, SScope *scope) {
+    std::string text1 = replaceAddWhite(std::move(text));
     auto tokens = getTokens(text1);
     auto program = parseAsIScheme(tokens);
 
-    SScope *scope = new SScope(nullptr);
     evaluate(scope, program);
 
-    for (auto item:scope->variableTable) {
+    if (scope->variableTable.size() != 1)
+        std::cout << "\n";
+    for (const auto &item:scope->variableTable) {
         std::cout << item.first << "\t" << *((int *) item.second) << std::endl;
     }
 }
@@ -251,16 +252,26 @@ int main() {
     getchar();
 
     std::string text;
+    auto *scope = new SScope(nullptr);
+
     if (a == 'n') {
-        char *fn = "C:\\Users\\ttp\\CLionProjects\\ny_pl0\\a.txt";
+        char fn[] = R"(C:\Users\ttp\CLionProjects\ny_pl0\a.txt)";
         text = readFileIntoString(fn);
-        func(text);
+        try {
+            func(text, scope);
+        } catch (std::exception &e) {
+            std::cout << e.what();
+        } catch (...) {
+            std::cout << "other error\n";
+        }
     } else {
         while (true) {
-            printf(">>>");
+            printf(">>> ");
             char str[1000];
             std::cin.getline(str, 1000);
             text = str;
+            if (text == "exit" || text == "q")
+                return 0;
 
             bool flag = false;
             for (auto item:str)
@@ -268,8 +279,14 @@ int main() {
                     flag = true;
             if (!flag) continue;
 
-            printf(">>>");
-            func(text);
+            printf(">>> ");
+            try {
+                func(text, scope);
+            } catch (std::exception &e) {
+                std::cout << e.what();
+            } catch (...) {
+                std::cout << "other error\n";
+            }
         }
     }
     return 0;
