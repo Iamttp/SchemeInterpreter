@@ -121,7 +121,7 @@ struct SScope {
 
 // ------------------------------------------- 类型实现
 // TODO 没有释放内存，没有对很多错误进行检查
-// TODO 添加其他类型 数值，Bool，列表和函数 ，现在的处理是bool、int统统为int.
+// TODO 现在的处理是bool、int统统为int. 没有浮点数
 struct SList {
     std::vector<void *> vec;
 };
@@ -133,13 +133,6 @@ struct SFunction {
 
     SFunction(SExpression *body, std::vector<std::string> parameters, SScope *scope)
             : body(body), parameters(std::move(parameters)), scope(scope) {}
-
-    SFunction *update(std::vector<void *> arguments) {
-        auto *newScope = new SScope(scope);
-        for (int i = 0; i < arguments.size(); i++)
-            newScope->variableTable[parameters[i]] = arguments[i];
-        return new SFunction(body, parameters, newScope);;
-    }
 };
 
 bool try_parse(std::string &val, int *num) {
@@ -158,7 +151,7 @@ void *evaluate(SScope *scope, SExpression *program) {
                 return scope->find(current->val);
         }
 
-        // TODO 处理 def if begin func ...
+        // TODO 可以考虑添加append 和高阶函数
         auto str = program->child[0]->val;
         if (str == "def")
             return scope->define(program->child[1]->val,
@@ -274,7 +267,9 @@ void *evaluate(SScope *scope, SExpression *program) {
         } else if (str == "not") {
             int *res = new int(!*((int *) evaluate(scope, program->child[1])));
             return (void *) res;
-        } else {
+        }
+            // TODO 貌似是因为递归调用时，scope没有正确的保存参数。
+        else {
             // 可能为自定义函数
             // 非具名函数调用：((func (x) (* x x)) 3)
             // 具名函数调用：(square 3)
@@ -282,8 +277,10 @@ void *evaluate(SScope *scope, SExpression *program) {
             std::vector<void *> arguments;
             for (auto i = program->child.begin() + 1; i != program->child.end(); ++i)
                 arguments.push_back(evaluate(scope, *i));
-            function = function->update(arguments);
-            return evaluate(function->scope, function->body);
+            auto *newScope = new SScope(scope);
+            for (int i = 0; i < function->parameters.size() && i < arguments.size(); i++)
+                newScope->variableTable[function->parameters[i]] = arguments[i];
+            return evaluate(newScope, function->body);
         }
 
     }
@@ -355,6 +352,5 @@ int main() {
         }
 
     }
-
     return 0;
 }
